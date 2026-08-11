@@ -3,8 +3,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --white: #ffffff;
-  --medium-gray: #e5e7eb;
+  --white: #F7F7F7;
+  --medium-gray: #cccccc;
   --dark-gray: #333333;
   --light-blue: #89CFF0;
   --background: #ffffff;
@@ -31,4 +31,16 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+[contenteditable] ul,
+.prose-meditation ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+}
+
+[contenteditable] ol,
+.prose-meditation ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
 }

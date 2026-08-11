@@ -6,16 +6,16 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="w-full py-8 border-t bg-[var(--white)] border-[var(--medium-gray)]">
+    <footer className="w-full py-3 bg-[var(--white)]">
       <div className="max-w-6xl mx-auto px-4">
-
-
-        <div className="mt-6 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-sm text-[var(--dark-gray)]"> Bible is Open. Sua ferramenta de fé e edificão diária</p>
-          <p className="text-sm mb-4 md:mb-0 text-[var(--medium-gray)]">© {currentYear} Bible Is Open. Todos os direitos reservados.</p>
-          <div className="flex gap-6">
-            <Link href="/privacy" className="text-sm text-[var(--dark-gray)] transition-colors duration-200 hover:text-[var(--light-blue)]">Privacidade</Link>
-            <Link href="/terms" className="text-sm text-[var(--dark-gray)] transition-colors duration-200 hover:text-[var(--light-blue)]">Termos</Link>
+        <div className="flex flex-col items-center gap-0.5 text-center">
+          <p className="text-sm text-[var(--dark-gray)]">Bible Is Open — Sua ferramenta de fé e edificação diária</p>
+          <div className="flex items-center justify-between w-full text-xs">
+            <p className="text-[var(--dark-gray)]/50">© {currentYear} Bible Is Open</p>
+            <div className="flex gap-4">
+              <Link href="/privacy" className="text-[var(--dark-gray)]/60 hover:text-[var(--light-blue)] transition-colors">Privacidade</Link>
+              <Link href="/terms" className="text-[var(--dark-gray)]/60 hover:text-[var(--light-blue)] transition-colors">Termos</Link>
+            </div>
           </div>
         </div>
       </div>

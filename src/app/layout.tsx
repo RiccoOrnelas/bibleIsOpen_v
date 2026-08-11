@@ -20,6 +20,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Bible Is Open",
   description: "Seu companheiro de fé diária para leitura devocional e exploração bíblica",
+    icons: {
+      icon: [
+      { url: "/favicon-light.png", media: "(prefers-color-scheme: light)" },
+      { url: "/favicon-dark.png", media: "(prefers-color-scheme: dark)" },
+      ],
+    },
 };
 
 export default function RootLayout({
@@ -47,7 +53,7 @@ export default function RootLayout({
           {/* Mobile Layout */}
           <div className="md:hidden flex flex-col min-h-full">
             <Header />
-            <main className="flex-1 pt-16 bg-[var(--background)] overflow-y-auto">{children}</main>
+            <main className="flex-1 pt-16 pb-16 bg-[var(--background)] overflow-y-auto">{children}</main>
             <Nav_botton />
             <Footer />
           </div>
