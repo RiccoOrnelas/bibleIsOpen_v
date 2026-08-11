@@ -9,6 +9,7 @@ const menuItems = [
   { label: 'Home', href: '/' },
   { label: 'Devotionals', href: '/devotionals' },
   { label: 'Bible', href: '/bible' },
+  { label: 'Meditação', href: '/meditation' },
   { label: 'About', href: '/about' },
 ];
 
@@ -23,8 +24,8 @@ export default function Header() {
 
   return (
     <>
-      <header className="md:hidden fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 z-50 bg-[var(--white)] border-b border-[var(--medium-gray)]">
-        <Link href="/" className="flex-shrink-0 w-32 sm:w-40">
+      <header className="md:hidden fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 z-50 bg-[var(--white)]">
+        <Link href="/" className=" flex-shrink-0 w-48 sm:w-60">
           <BrandLogo />
         </Link>
 
@@ -47,7 +48,7 @@ export default function Header() {
       )}
 
       <nav
-        className={`fixed left-0 top-16 bottom-0 w-64 flex flex-col md:hidden z-50 transform transition-transform duration-300 bg-[var(--white)] border-r border-[var(--medium-gray)] ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed left-0 top-16 bottom-0 w-64 flex flex-col md:hidden z-50 transform transition-transform duration-300 bg-[var(--white)] ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <ul className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
           {menuItems.map((item) => (
@@ -59,7 +60,7 @@ export default function Header() {
           ))}
         </ul>
 
-        <div className="px-4 py-4 border-t border-[var(--medium-gray)] space-y-2">
+        <div className="px-4 py-4 space-y-2">
           {authItems.map((item) => (
             <Link
               key={item.href}
