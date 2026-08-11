@@ -180,7 +180,7 @@ export default function MeditationPage() {
                 <span className="font-bold text-lg border-b-4 border-cyan-400">A</span>
               </ToolbarButton>
               {colorOpen && (
-                <div className="absolute left-0 top-10 z-20 grid grid-cols-5 gap-1 p-2 w-36 rounded-lg bg-[var(--white)] shadow-xl max-[360px]:left-auto max-[360px]:right-0">
+                <div className="fixed left-4 top-24 z-[100] grid grid-cols-5 gap-1 p-2 w-36 rounded-lg bg-[var(--white)] shadow-xl sm:absolute sm:left-0 sm:top-10 sm:z-20 max-[360px]:left-auto max-[360px]:right-4">
                   {textColors.map((color) => (
                     <button
                       key={color}
