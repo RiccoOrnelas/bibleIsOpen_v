@@ -21,10 +21,11 @@ const authItems = [
 
 function SidebarIcon({ name }: { name: string }) {
   const cls = 'w-5 h-5 flex-shrink-0';
+  const centered = "ml-3 w-5 h-5 flex-shrink-0"
   switch (name) {
     case 'meditate':
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={cls}>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={centered}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
         </svg>
       );
@@ -90,7 +91,7 @@ export default function DesktopSidebar() {
           <li>
             <Link
               href="/meditation"
-              className={`flex items-center gap-3 rounded-lg transition-colors duration-200 text-[var(--dark-gray)] hover:bg-[var(--medium-gray)] overflow-hidden ${collapsed ? 'justify-center px-0 py-2' : 'px-3 py-2'}`}
+              className={`flex w-full items-center gap-3 rounded-lg transition-colors duration-200 text-[var(--dark-gray)] hover:bg-[var(--medium-gray)] overflow-hidden ${collapsed ? 'justify-center px-0 py-2' : 'px-3 py-2'}`}
               title={collapsed ? 'Meditação' : undefined}
             >
               <span className="flex-shrink-0 w-9 h-9 rounded-full bg-[var(--light-blue)] text-white flex items-center justify-center shadow-md">
@@ -98,7 +99,7 @@ export default function DesktopSidebar() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
               </span>
-              <span className={`text-sm font-semibold whitespace-nowrap transition-opacity duration-200 ${collapsed ? 'w-0 opacity-0' : 'opacity-100'}`}>
+              <span className={`text-sm font-semibold whitespace-nowrap transition-opacity duration-200 ${collapsed ? 'hidden' : 'opacity-100'}`}>
                 Meditação
               </span>
             </Link>
@@ -110,10 +111,12 @@ export default function DesktopSidebar() {
             <li key={item.href}>
               <Link
                 href={item.href}
-                className={`flex items-center gap-3 rounded-lg transition-colors duration-200 text-[var(--dark-gray)] hover:bg-[var(--medium-gray)] overflow-hidden ${collapsed ? 'justify-center px-0 py-3' : 'px-3 py-3'}`}
+                className={`flex w-full items-center gap-3 rounded-lg transition-colors duration-200 text-[var(--dark-gray)] hover:bg-[var(--medium-gray)] overflow-hidden ${collapsed ? 'justify-center px-0 py-2' : 'px-3 py-3'}`}
                 title={collapsed ? item.label : undefined}
               >
-                <SidebarIcon name={item.icon} />
+                <span className="flex w-9 flex-shrink-0 items-center justify-center">
+                  <SidebarIcon name={item.icon} />
+                </span>
                 <span className={`text-sm whitespace-nowrap transition-opacity duration-200 ${collapsed ? 'w-0 opacity-0 hidden' : 'opacity-100'}`}>
                   {item.label}
                 </span>

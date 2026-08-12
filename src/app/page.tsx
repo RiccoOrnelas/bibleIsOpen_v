@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Devotional } from '@/types/devotional';
 
@@ -12,135 +12,167 @@ interface RandomVerse {
   verse: number;
 }
 
-function useDayIndex(): number {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
-  return Math.floor((now.getTime() - start.getTime()) / 86400000);
+function getTodayKey() {
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${today.getFullYear()}-${month}-${day}`;
+}
+
+function getDayIndex() {
+  const today = new Date();
+  const start = new Date(today.getFullYear(), 0, 0);
+  return Math.floor((today.getTime() - start.getTime()) / 86400000);
 }
 
 export default function HomePage() {
-  const dayIndex = useDayIndex();
-
   const [wordOfDay, setWordOfDay] = useState<RandomVerse | null>(null);
   const [randomWord, setRandomWord] = useState<RandomVerse | null>(null);
   const [devotionalOfDay, setDevotionalOfDay] = useState<Devotional | null>(null);
-  const [randomDevotional, setRandomDevotional] = useState<Devotional | null>(null);
-  const [loadingVerse, setLoadingVerse] = useState(true);
-  const [loadingRandom, setLoadingRandom] = useState(true);
-
-  useEffect(() => {
-    fetch(`/api/bible/random?seed=day`).then((r) => r.json()).then((d) => {
-      if (!d.error) setWordOfDay(d);
-      setLoadingVerse(false);
-    }).catch(() => setLoadingVerse(false));
-  }, []);
-
-  useEffect(() => {
-    fetch(`/api/bible/random`).then((r) => r.json()).then((d) => {
-      if (!d.error) setRandomWord(d);
-      setLoadingRandom(false);
-    }).catch(() => setLoadingRandom(false));
-  }, []);
-
   const [devotionalsAll, setDevotionalsAll] = useState<Devotional[]>([]);
+  const [loadingDaily, setLoadingDaily] = useState(true);
+  const [loadingRandom, setLoadingRandom] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadRandomWord = async () => {
+    setRefreshing(true);
+    try {
+      const response = await fetch('/api/bible/random', { cache: 'no-store' });
+      const verse = await response.json();
+      if (!verse.error) setRandomWord(verse);
+    } finally {
+      setRefreshing(false);
+      setLoadingRandom(false);
+    }
+  };
 
   useEffect(() => {
-    fetch('/devotionals.json').then((r) => r.json()).then((devs: Devotional[]) => {
-      setDevotionalsAll(devs);
-      const safeIndex = dayIndex % devs.length;
-      setDevotionalOfDay(devs[safeIndex]);
-      let randIdx = Math.floor(Math.random() * devs.length);
-      if (randIdx === safeIndex) randIdx = (randIdx + 1) % devs.length;
-      setRandomDevotional(devs[randIdx]);
-    });
-  }, [dayIndex]);
+    const todayKey = getTodayKey();
+    const storageKey = `bible-is-open-word-of-day-${todayKey}`;
+    const cached = localStorage.getItem(storageKey);
 
-  const VerseCard = ({ verse, label }: { verse: RandomVerse | null; label: string }) => (
+    if (cached) {
+      try {
+        setWordOfDay(JSON.parse(cached));
+        setLoadingDaily(false);
+        return;
+      } catch {
+        localStorage.removeItem(storageKey);
+      }
+    }
+
+    fetch('/api/bible/random', { cache: 'no-store' })
+      .then((response) => response.json())
+      .then((verse: RandomVerse) => {
+        if (!verse.reference) return;
+        setWordOfDay(verse);
+        localStorage.setItem(storageKey, JSON.stringify(verse));
+      })
+      .finally(() => setLoadingDaily(false));
+  }, []);
+
+  useEffect(() => {
+    loadRandomWord();
+  }, []);
+
+  useEffect(() => {
+    fetch('/devotionals.json')
+      .then((response) => response.json())
+      .then((devotionals: Devotional[]) => {
+        setDevotionalsAll(devotionals);
+        const dailyIndex = getDayIndex() % devotionals.length;
+        setDevotionalOfDay(devotionals[dailyIndex]);
+      });
+  }, []);
+
+  const VerseCard = ({ verse, loading, label }: { verse: RandomVerse | null; loading?: boolean; label: string }) => (
     <Link
       href={verse ? `/bible?book=${verse.book}&chapter=${verse.chapter}` : '#'}
-      className="block p-5 rounded-2xl border border-[var(--medium-gray)] bg-[var(--white)] hover:border-[var(--light-blue)] hover:shadow-md transition-all group"
+      className="flex min-h-40 w-full flex-col justify-between border border-[var(--medium-gray)] bg-[var(--white)] p-5 transition hover:border-[var(--light-blue)] hover:shadow-md group"
     >
-      <span className="text-xs font-semibold text-[var(--light-blue)] uppercase tracking-wide">{label}</span>
-      {verse ? (
+      <span className=" md:text-sm lg:text-lg font-bold font-semibold uppercase tracking-wide text-[var(--light-blue)]">{label}</span>
+      {loading || !verse ? (
+        <p className="text-sm text-[var(--dark-gray)]/40">Carregando...</p>
+      ) : (
         <>
-          <p className="mt-3 text-sm leading-relaxed text-[var(--dark-gray)] line-clamp-4">
+          <p className="text-sm leading-relaxed text-[var(--dark-gray)] break-words [overflow-wrap:anywhere]">
             &ldquo;{verse.text}&rdquo;
           </p>
-          <p className="mt-3 text-xs font-semibold text-[var(--light-blue)]">
-            {verse.reference}
-          </p>
+          <p className="mt-4 text-xs font-semibold text-[var(--light-blue)]">{verse.reference}</p>
         </>
-      ) : (
-        <p className="mt-3 text-sm text-[var(--dark-gray)]/40">Carregando...</p>
       )}
     </Link>
   );
-
-  const DevotionalCard = ({ devotional, label }: { devotional: Devotional | null; label: string }) => {
-    const idx = devotional ? devotionalsAll.findIndex((d) => d.title === devotional.title) : -1;
+  const RefreshBtn = () => {
     return (
-    <Link
-      href={idx >= 0 ? `/devotionals/viewer?i=${idx}` : '#'}
-      className="block p-5 rounded-2xl border border-[var(--medium-gray)] bg-[var(--white)] hover:border-[var(--light-blue)] hover:shadow-md transition-all group"
-    >
-      <span className="text-xs font-semibold text-[var(--light-blue)] uppercase tracking-wide">{label}</span>
-      {devotional ? (
-        <>
-          <h3 className="mt-3 text-sm font-bold text-[var(--dark-gray)] group-hover:text-[var(--light-blue)] transition-colors line-clamp-2">
-            {devotional.title}
-          </h3>
-          <p className="mt-2 text-xs leading-relaxed text-[var(--dark-gray)]/60 line-clamp-3">
-            {devotional.body.replace(/\*\*/g, '').slice(0, 160)}...
-          </p>
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--light-blue)]/15 text-[var(--light-blue)]">
+      <button
+        type="button"
+        onClick={loadRandomWord}
+        disabled={refreshing}
+        aria-label="Atualizar palavra aleatória"
+        title="Nova palavra aleatória"
+        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[var(--light-blue)] text-white shadow-sm transition hover:rotate-180 hover:opacity-90 disabled:opacity-50"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992V4.356m-1.148 4.992a8.25 8.25 0 1 0 1.148 4.992" />
+        </svg>
+      </button>
+    )
+  }
+  const DevotionalCard = ({ devotional, label }: { devotional: Devotional | null; label: string }) => {
+    const index = devotional ? devotionalsAll.findIndex((item) => item.title === devotional.title) : -1;
+    return (
+      <Link
+        href={index >= 0 ? `/devotionals/viewer?i=${index}` : '#'}
+        className="block min-h-40 w-full border border-[var(--medium-gray)] bg-[var(--white)] p-5 transition hover:border-[var(--light-blue)] hover:shadow-md group"
+      >
+        <span className="md:text-sm lg:text-lg font-semibold uppercase tracking-wide text-[var(--light-blue)]">{label}</span>
+        {!devotional ? (
+          <p className="text-sm text-[var(--dark-gray)]/40">Carregando...</p>
+        ) : (
+          <>
+            <h3 className="flex items-center justify-center mt-5 line-clamp-2 text-base font-bold leading-snug text-[var(--dark-gray)]">{devotional.title}</h3>
+            <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-[var(--dark-gray)]/65 break-words [overflow-wrap:anywhere]">
+              {devotional.body.replace(/\*\*/g, '').replace(/\n/g, ' ').slice(0, 160)}...
+            </p>
+            <span className="mt-3 self-start rounded-full bg-[var(--light-blue)]/15 px-2 py-0.5 text-xs text-[var(--light-blue)]">
               {devotional.theme}
             </span>
-            <span className="text-xs text-[var(--dark-gray)]/40">{devotional.author}</span>
-          </div>
-        </>
-      ) : (
-        <p className="mt-3 text-sm text-[var(--dark-gray)]/40">Carregando...</p>
-      )}
-    </Link>
+          </>
+        )}
+      </Link>
     );
   };
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[var(--dark-gray)] mb-2">
-          Bible Is Open
-        </h1>
-        <p className="text-sm text-[var(--dark-gray)]/50 mb-8">
-          Seu companheiro de fé diária
-        </p>
+      <div className="mx-auto w-full max-w-3xl p-4 sm:p-6 lg:p-8">
+        <header className="mb-8 text-center">
+          <h1 className="text-2xl font-bold text-[var(--dark-gray)] sm:text-3xl">Bible Is Open</h1>
+          <p className="mt-2 text-sm text-[var(--dark-gray)]/55">Seu companheiro de fé diária</p>
+        </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="space-y-5">
-            <VerseCard verse={wordOfDay} label="Palavra do Dia" />
+        <section className="flex w-full flex-col gap-6">
+          <article className="w-full space-y-2">
+
+            <VerseCard verse={wordOfDay} loading={loadingDaily} label='Palavra do Dia' />
+          </article>
+
+          <article className="w-full space-y-2">
+
             <DevotionalCard devotional={devotionalOfDay} label="Devocional do Dia" />
-          </div>
-          <div className="space-y-5">
-            <VerseCard verse={randomWord} label="Palavra Aleatória" />
-            <DevotionalCard devotional={randomDevotional} label="Devocional Aleatório" />
-          </div>
-        </div>
+          </article>
 
-        <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Link href="/bible" className="p-4 rounded-xl border border-[var(--medium-gray)] bg-[var(--white)] text-center text-sm font-medium text-[var(--dark-gray)] hover:border-[var(--light-blue)] hover:text-[var(--light-blue)] transition-colors">
-            Bíblia
-          </Link>
-          <Link href="/devotionals" className="p-4 rounded-xl border border-[var(--medium-gray)] bg-[var(--white)] text-center text-sm font-medium text-[var(--dark-gray)] hover:border-[var(--light-blue)] hover:text-[var(--light-blue)] transition-colors">
-            Devocionais
-          </Link>
-          <Link href="/about" className="p-4 rounded-xl border border-[var(--medium-gray)] bg-[var(--white)] text-center text-sm font-medium text-[var(--dark-gray)] hover:border-[var(--light-blue)] hover:text-[var(--light-blue)] transition-colors">
-            Sobre
-          </Link>
-          <Link href="/login" className="p-4 rounded-xl border border-[var(--medium-gray)] bg-[var(--white)] text-center text-sm font-medium text-[var(--dark-gray)] hover:border-[var(--light-blue)] hover:text-[var(--light-blue)] transition-colors">
-            Entrar
-          </Link>
-        </div>
+          <article className="w-full space-y-2">
+            <div className="relative">
+              <VerseCard verse={randomWord} loading={loadingRandom} label="Palavra Aleatória" />
+              <div className="absolute right-3 top-3">
+                <RefreshBtn />
+              </div>
+            </div>
+          </article>
+
+        </section>
       </div>
     </div>
   );
