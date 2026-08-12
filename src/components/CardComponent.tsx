@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Devotional } from '@/types/devotional';
+import { DEVOTIONAL_PLACEHOLDER } from '@/data/devotionals';
 
 function getSnippet(body: string, maxLen = 140): string {
   const plain = body.replace(/\*\*/g, '').replace(/\n/g, ' ').trim();
@@ -17,6 +18,9 @@ export default function CardComponent({ devotional, index }: { devotional: Devot
           src={devotional.img}
           alt={devotional.title}
           fill
+          onError={(event) => {
+            event.currentTarget.src = DEVOTIONAL_PLACEHOLDER;
+          }}
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
