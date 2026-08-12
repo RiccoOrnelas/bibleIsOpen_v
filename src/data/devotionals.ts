@@ -3,7 +3,18 @@ import devotionalsData from '../../devotionals.json';
 
 export type { Devotional };
 
-export const devotionals: Devotional[] = devotionalsData as Devotional[];
+export const DEVOTIONAL_PLACEHOLDER = '/devotional-placeholder.svg';
+
+export function getDevotionalImage(image?: string): string {
+  const value = image?.trim();
+
+  return value && !value.includes('placehold.co') ? value : DEVOTIONAL_PLACEHOLDER;
+}
+
+export const devotionals: Devotional[] = (devotionalsData as Devotional[]).map((devotional) => ({
+  ...devotional,
+  img: getDevotionalImage(devotional.img),
+}));
 
 export function getDevotional(index: number): Devotional | undefined {
   return devotionals[index];
