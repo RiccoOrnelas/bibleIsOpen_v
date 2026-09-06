@@ -23,23 +23,23 @@ interface ChapterData {
   verses: VerseData[];
 }
 
-const VERSIONS = [
-  { code: 'ACF', name: 'Almeida Corrigida Fiel' },
-  { code: 'NVI', name: 'Nova Versão Internacional' },
-  { code: 'KJF', name: 'King James Fiel' },
-];
+interface BibleVersion {
+  code: string;
+  name: string;
+}
 
 function BibleContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const [books, setBooks] = useState<Book[]>([]);
+  const [availableVersions, setAvailableVersions] = useState<BibleVersion[]>([]);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [chapterNum, setChapterNum] = useState(1);
   const [chapterData, setChapterData] = useState<ChapterData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [version, setVersion] = useState('ACF');
+  const [version, setVersion] = useState('');
   const [selectedVerses, setSelectedVerses] = useState<Set<number>>(new Set());
   const [copiedFeedback, setCopiedFeedback] = useState(false);
   const [showChapters, setShowChapters] = useState(false);
@@ -50,11 +50,34 @@ function BibleContent() {
   const clearSelection = useCallback(() => setSelectedVerses(new Set()), []);
 
   useEffect(() => {
-    fetch('/api/bible/books')
+    fetch('/api/bible/versions')
       .then((r) => r.json())
-      .then((d) => setBooks(d.data))
-      .catch(() => setError('Erro ao carregar livros'));
+      .then((d) => {
+        if (!Array.isArray(d.data) || d.data.length === 0) {
+          throw new Error('No Bible versions available');
+        }
+
+        setAvailableVersions(d.data);
+        setVersion((current) => d.data.some((item: BibleVersion) => item.code === current) ? current : d.data[0].code);
+      })
+      .catch(() => setError('Erro ao verificar versões disponíveis'));
   }, []);
+
+  useEffect(() => {
+    if (!version) return;
+
+    fetch(`/api/bible/books?version=${encodeURIComponent(version)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.error || !Array.isArray(d.data)) {
+          throw new Error('Books unavailable');
+        }
+
+        setBooks(d.data);
+        if (d.version && d.version !== version) setVersion(d.version);
+      })
+      .catch(() => setError('Erro ao carregar livros'));
+  }, [version]);
 
   useEffect(() => {
     const qBook = searchParams.get('book');
@@ -81,6 +104,7 @@ function BibleContent() {
           setChapterData(null);
           setError('Capítulo não encontrado');
         } else {
+          if (d.version && d.version !== version) setVersion(d.version);
           setChapterData(d.data);
           setError('');
         }
@@ -98,11 +122,32 @@ function BibleContent() {
     return `"${verse.text}" **${ref}:${verse.number}**`;
   };
 
+  const formatVerseRange = (numbers: number[]): string => {
+    const ranges: string[] = [];
+    let start = numbers[0];
+    let end = numbers[0];
+
+    for (let index = 1; index < numbers.length; index++) {
+      if (numbers[index] === end + 1) {
+        end = numbers[index];
+        continue;
+      }
+
+      ranges.push(start === end ? `${start}` : `${start}-${end}`);
+      start = numbers[index];
+      end = numbers[index];
+    }
+
+    ranges.push(start === end ? `${start}` : `${start}-${end}`);
+    return ranges.join(',');
+  };
+
   const formatSelectedVerses = (verses: VerseData[]): string => {
     const sorted = [...verses].sort((a, b) => a.number - b.number);
-    return sorted
-      .map((verse, index) => formatVerseCopy(verse, index === sorted.length - 1))
-      .join('\n');
+    const numbers = sorted.map((verse) => verse.number);
+    const reference = `${chapterData!.reference}:${formatVerseRange(numbers)}`;
+    const text = sorted.map((verse) => `"${verse.text}"`).join('\n');
+    return `${text}\n**${reference}**`;
   };
 
   const copyToClipboard = async (text: string) => {
@@ -125,7 +170,7 @@ function BibleContent() {
 
   const handleVerseContextMenu = (verse: VerseData, e: React.MouseEvent) => {
     e.preventDefault();
-    if (selectedVerses.has(verse.number) && selectedVerses.size > 1) {
+    if (selectedVerses.size > 1) {
       const verses = chapterData!.verses.filter((v) => selectedVerses.has(v.number));
       copyToClipboard(formatSelectedVerses(verses));
     } else {
@@ -179,7 +224,7 @@ function BibleContent() {
             onChange={(e) => setVersion(e.target.value)}
             className="block w-full min-w-0 max-w-full px-2 py-1.5 text-sm rounded-lg border border-[var(--medium-gray)] bg-[var(--white)] text-[var(--dark-gray)] focus:outline-none focus:ring-2 focus:ring-[var(--light-blue)]"
           >
-            {VERSIONS.map((v) => (
+            {availableVersions.map((v) => (
               <option key={v.code} value={v.code}>{v.name}</option>
             ))}
           </select>
@@ -269,7 +314,7 @@ function BibleContent() {
                 onChange={(e) => setVersion(e.target.value)}
                 className="w-full px-3 py-2 mb-4 text-sm rounded-lg border border-[var(--medium-gray)] bg-[var(--white)] text-[var(--dark-gray)] focus:outline-none focus:ring-2 focus:ring-[var(--light-blue)]"
               >
-                {VERSIONS.map((v) => (
+                {availableVersions.map((v) => (
                   <option key={v.code} value={v.code}>{v.name}</option>
                 ))}
               </select>

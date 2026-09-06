@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchBible } from '@/lib/bibleApi';
+import { getChapter } from '@/lib/bibleApi';
 
 export async function GET(request: NextRequest) {
   const version = request.nextUrl.searchParams.get('version') || 'ACF';
@@ -11,17 +11,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const data = await fetchBible<{
-      data: {
-        reference: string;
-        version: string;
-        chapter: { number: number; verses: number };
-        verses: { number: number; text: string }[];
-      };
-    }>(`/versions/${version}/books/${book}/chapters/${chapter}`);
-
+    const data = await getChapter(version, book, Number(chapter));
     return NextResponse.json(data);
   } catch {
-    return NextResponse.json({ error: 'Failed to fetch chapter' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch chapter' }, { status: 503 });
   }
 }

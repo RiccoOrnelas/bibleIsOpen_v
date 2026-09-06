@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
-import { fetchBible } from '@/lib/bibleApi';
+import { NextRequest, NextResponse } from 'next/server';
+import { getBooks } from '@/lib/bibleApi';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const data = await fetchBible<{ data: { id: number; name: string; abbrev: string; testament: string }[] }>('/books');
-    return NextResponse.json(data);
+    const version = request.nextUrl.searchParams.get('version') || 'ACF';
+    return NextResponse.json(await getBooks(version));
   } catch {
-    return NextResponse.json({ error: 'Failed to fetch books' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch books' }, { status: 503 });
   }
 }
